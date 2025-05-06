@@ -123,21 +123,21 @@ case "$CHOICE" in
 
     mkdir -p "$AZTEC_DIR"
     cat <<EOF > "$CONFIG_FILE"
-    {
-      "SERVER_IP": "$SERVER_IP",
-      "TCP_UDP_PORT": "$TCP_UDP_PORT",
-      "HTTP_PORT": "$HTTP_PORT",
-      "ETHEREUM_HOSTS": "$ETHEREUM_HOSTS",
-      "L1_CONSENSUS_HOST_URLS": "$L1_CONSENSUS_HOST_URLS"
-    }
-    EOF
+{
+  "SERVER_IP": "$SERVER_IP",
+  "TCP_UDP_PORT": "$TCP_UDP_PORT",
+  "HTTP_PORT": "$HTTP_PORT",
+  "ETHEREUM_HOSTS": "$ETHEREUM_HOSTS",
+  "L1_CONSENSUS_HOST_URLS": "$L1_CONSENSUS_HOST_URLS"
+}
+EOF
 
     cat <<EOF > "$ENV_FILE"
-    VALIDATOR_PRIVATE_KEY_COMMAND=gpg --batch --yes --passphrase '' -d $AZTEC_DIR/ethkey.gpg
-    P2P_IP=$SERVER_IP
-    ETHEREUM_HOSTS=$ETHEREUM_HOSTS
-    L1_CONSENSUS_HOST_URLS=$L1_CONSENSUS_HOST_URLS
-    EOF
+VALIDATOR_PRIVATE_KEY_COMMAND=gpg --batch --yes --passphrase '' -d $AZTEC_DIR/ethkey.gpg
+P2P_IP=$SERVER_IP
+ETHEREUM_HOSTS=$ETHEREUM_HOSTS
+L1_CONSENSUS_HOST_URLS=$L1_CONSENSUS_HOST_URLS
+EOF
 
     # --- Install Dependencies ---
     echo -e "\n🔧 ${YELLOW}${BOLD}Setting up system dependencies...${RESET}"
@@ -162,33 +162,25 @@ case "$CHOICE" in
 
     # --- Docker Compose Setup ---
     cat <<EOF > "$AZTEC_DIR/docker-compose.yml"
-    services:
-      node:
-        image: aztecprotocol/aztec:$IMAGE_TAG
-        container_name: aztec-sequencer
-        environment:
-          ETHEREUM_HOSTS: \${ETHEREUM_HOSTS}
-          L1_CONSENSUS_HOST_URLS: \${L1_CONSENSUS_HOST_URLS}
-          DATA_DIRECTORY: /data
-          VALIDATOR_PRIVATE_KEY: "\$(\${VALIDATOR_PRIVATE_KEY_COMMAND})"
-          P2P_IP: \${P2P_IP}
-          LOG_LEVEL: debug
-        entrypoint: >
-          sh -c 'node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start --network=sepolia'
-        volumes:
-          - "$AZTEC_DIR/data:/data"
-    EOF
+services:
+  node:
+    image: aztecprotocol/aztec:$IMAGE_TAG
+    environment:
+      - ETHEREUM_HOSTS=$ETHEREUM_HOSTS
+      - L1_CONSENSUS_HOST_URLS=$L1_CONSENSUS_HOST_URLS
+    ports:
+      - "$TCP_UDP_PORT:$TCP_UDP_PORT/udp"
+      - "$HTTP_PORT:$HTTP_PORT"
+EOF
 
-    # --- Starting Node ---
-    echo -e "\n🚀 Starting node with docker-compose...${RESET}"
+    # --- Install Docker & Start Node ---
+    echo -e "\n🛠 ${CYAN}Starting Aztec Node...${RESET}"
     cd "$AZTEC_DIR"
     docker-compose up -d
 
-    echo -e "${GREEN}✅ Node installation completed successfully.${RESET}"
-    exit 0
+    echo -e "${GREEN}✅ Aztec Node setup complete. Your node is now running!${RESET}"
     ;;
   *)
-    echo -e "${RED}❌ Invalid option. Please try again.${RESET}"
-    exit 1
+    echo -e "${RED}❌ Invalid choice! Please try again.${RESET}"
     ;;
 esac
